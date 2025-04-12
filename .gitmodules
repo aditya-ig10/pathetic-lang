@@ -1,0 +1,3 @@
+[submodule "src/pathetic-lang"]
+	path = src/pathetic-lang
+	url = https://github.com/aditya-ig10/pathetic-lang.git

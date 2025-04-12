@@ -1,0 +1,9 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = true
+[remote "origin"]
+	url = https://github.com/aditya-ig10/pathetic-lang.git
+	tagOpt = --no-tags
+	fetch = +refs/*:refs/*
+	mirror = true

@@ -19,6 +19,15 @@ package() {
     # Install Python package using setuptools
     python setup.py install --root="$pkgdir"
 
-    # Make the executable accessible system-wide
-    install -Dm755 pathetic "$pkgdir/usr/bin/pathetic"
+    # Create a wrapper for the pathetic script (if it's a .py file)
+    cat > "$pkgdir/usr/bin/pathetic" <<EOF
+#!/usr/bin/env python3
+from pathetic.cli import main
+
+if __name__ == "__main__":
+    main()
+EOF
+
+    # Make the pathetic script executable
+    chmod +x "$pkgdir/usr/bin/pathetic"
 }
