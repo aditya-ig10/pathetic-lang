@@ -24,7 +24,7 @@ def main():
         return
 
     if args[0] in ("-v", "--version"):
-        print(f"pathetic {VERSION}")
+        print(f"pathetic {VERSION} --dev-build")
         return
 
     if args[0] in ("-h", "--help"):
