@@ -1,0 +1,10 @@
+setup.py
+pathetic/__init__.py
+pathetic/cli.py
+pathetic/interpreter.py
+pathetic/runner.py
+pathetic.egg-info/PKG-INFO
+pathetic.egg-info/SOURCES.txt
+pathetic.egg-info/dependency_links.txt
+pathetic.egg-info/entry_points.txt
+pathetic.egg-info/top_level.txt
