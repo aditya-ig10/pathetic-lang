@@ -25,9 +25,9 @@ def parse_value(val):
 # Evaluates a mathematical or logical expression after replacing operators and variables
 def evaluate_expression(expr):
     try:
-        # Replace | with % (mod), ^ with ** (power), and mod with % to ensure correct operation
-        # Note: ^ is strictly treated as power
-        expr = expr.strip().replace('|', '%').replace('^', '**').replace('mod', '%')
+        # Replace | with % (mod) and ^ with ** (power) to ensure correct operation
+        # Note: ^ is strictly treated as power, not factorial
+        expr = expr.strip().replace('|', '%').replace('^', '**')
 
         # Replace variables with their values
         for var in sorted(variables.keys(), key=len, reverse=True):
@@ -49,6 +49,29 @@ def evaluate_expression(expr):
 
 # --- String Formatting Functions ---
 
+# Interprets f-strings by evaluating expressions within curly braces
+def interpret_fstring(content):
+    result = ""
+    i = 0
+    while i < len(content):
+        if content[i] == '{':
+            i += 1
+            expr = ""
+            while i < len(content) and content[i] != '}':
+                expr += content[i]
+                i += 1
+            if i >= len(content):
+                return "Formatting error: Unclosed '{'"
+            i += 1
+            evaluated = evaluate_expression(expr)
+            if isinstance(evaluated, str) and evaluated.startswith("Evaluation error"):
+                return f"Formatting error: {evaluated}"
+            result += str(evaluated)
+        else:
+            result += content[i]
+            i += 1
+    return result
+
 # Removes quotes from a string if it is enclosed in quotes
 def strip_quotes(s):
     if isinstance(s, str) and len(s) >= 2:
@@ -64,12 +87,21 @@ def interpret_line(line):
     if not line or line.startswith("##"):
         return None
 
+    # Handle say f"formatted string" for f-string output
+    if line.startswith("say f\"") and line.endswith("\""):
+        content = line[5:-1]
+        result = interpret_fstring(content)
+        if not result.startswith("Formatting error"):
+            print(strip_quotes(result))
+        else:
+            print(result)
+        return None
+
     # Handle say "string" for direct string output
-    if line.startswith("say "):
+    elif line.startswith("say "):
         content = line[4:].strip()
         if content.startswith('"') and content.endswith('"'):
-            # Strip quotes from the content and print without surrounding quotes
-            print(strip_quotes(content))
+            print(content[1:-1])
         else:
             print("Syntax error: Invalid string format")
         return None
@@ -154,7 +186,7 @@ def interpret_line(line):
         return result
 
     # Handle assignment or expression evaluation
-    elif any(op in line for op in ["+", "-", "*", "/", "|", "^", ">", "<", "!=", "<=", ">=", "=", "and", "or", "mod"]):
+    elif any(op in line for op in ["+", "-", "*", "/", "|", "^", ">", "<", "!=", "<=", ">=", "=", "and", "or"]):
         # Assignment (var = expr)
         if "=" in line and not any(sym + "=" in line for sym in ["!", "<", ">"]):
             try:
