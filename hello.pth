@@ -1,7 +1,10 @@
+##Sample Comment
 let x = 5
 let y = 10
 let arr[3] = 1, 2, 3
+say "Enter the Value for z:"
 get(z)
+say "Enter the Value for nums[3]:"
 get(nums[3])
 say "Program Started"
 say f"x = {x}, y = {y}, sum = {x + y}"
@@ -17,6 +20,6 @@ let b = 0
 say f"a and b = {a and b}"
 say f"a or b = {a or b}"
 let mod = 10 | 3
-let power = 2 ^ 4
+let power = 2 ^ 3
 say f"10 mod 3 = {mod}, 2^4 = {power}"
 say "Program Complete"

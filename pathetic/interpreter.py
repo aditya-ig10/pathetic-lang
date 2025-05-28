@@ -1,7 +1,11 @@
 import re
 
+# Global dictionary to store variables and their values
 variables = {}
 
+# --- Value Parsing Functions ---
+
+# Parses a string value into an appropriate type (int, float, or string)
 def parse_value(val):
     val = val.strip()
     try:
@@ -16,9 +20,13 @@ def parse_value(val):
     except ValueError:
         return val
 
+# --- Expression Evaluation Functions ---
+
+# Evaluates a mathematical or logical expression after replacing operators and variables
 def evaluate_expression(expr):
     try:
-        # Replace | with % (mod) and ^ with ** (power)
+        # Replace | with % (mod) and ^ with ** (power) to ensure correct operation
+        # Note: ^ is strictly treated as power, not factorial
         expr = expr.strip().replace('|', '%').replace('^', '**')
 
         # Replace variables with their values
@@ -26,7 +34,7 @@ def evaluate_expression(expr):
             # Ensure whole word replacement (avoid partial variable matches)
             expr = re.sub(rf'\b{var}\b', str(variables[var]), expr)
 
-        # Define safe eval environment
+        # Define safe eval environment to prevent unsafe code execution
         safe_dict = {
             "__builtins__": None,
             "and": lambda x, y: x and y,
@@ -39,6 +47,9 @@ def evaluate_expression(expr):
     except Exception as e:
         return f"Evaluation error: {str(e)}"
 
+# --- String Formatting Functions ---
+
+# Interprets f-strings by evaluating expressions within curly braces
 def interpret_fstring(content):
     result = ""
     i = 0
@@ -61,18 +72,22 @@ def interpret_fstring(content):
             i += 1
     return result
 
+# Removes quotes from a string if it is enclosed in quotes
 def strip_quotes(s):
     if isinstance(s, str) and len(s) >= 2:
         if (s.startswith('"') and s.endswith('"')) or (s.startswith("'") and s.endswith("'")):
             return s[1:-1]
     return s
 
+# --- Line Interpretation Functions ---
+
+# Interprets a single line of code and executes the corresponding action
 def interpret_line(line):
     line = line.strip()
-    if not line or line.startswith("//"):
+    if not line or line.startswith("##"):
         return None
 
-    # say f"formatted string"
+    # Handle say f"formatted string" for f-string output
     if line.startswith("say f\"") and line.endswith("\""):
         content = line[5:-1]
         result = interpret_fstring(content)
@@ -82,7 +97,7 @@ def interpret_line(line):
             print(result)
         return None
 
-    # say "string"
+    # Handle say "string" for direct string output
     elif line.startswith("say "):
         content = line[4:].strip()
         if content.startswith('"') and content.endswith('"'):
@@ -91,23 +106,23 @@ def interpret_line(line):
             print("Syntax error: Invalid string format")
         return None
 
-    # then (statement)
+    # Handle then (statement) for if-then-else blocks
     elif line.startswith("then (") and line.endswith(")"):
         return line[6:-1].strip()
 
-    # else (statement)
+    # Handle else (statement) for if-then-else blocks
     elif line.startswith("else (") and line.endswith(")"):
         return line[6:-1].strip()
 
-    # while (condition)
+    # Handle while (condition) for loop constructs
     elif line.startswith("while (") and line.endswith(")"):
         return line[7:-1].strip()
 
-    # do (body)
+    # Handle do (body) for loop constructs
     elif line.startswith("do (") and line.endswith(")"):
         return line[4:-1].strip()
 
-    # let variable or array declaration
+    # Handle let for variable or array declaration
     elif line.startswith("let "):
         parts = line[4:].split("=", 1)
         if len(parts) != 2:
@@ -116,14 +131,14 @@ def interpret_line(line):
         name_part, value_part = parts[0].strip(), parts[1].strip()
 
         if "[" in name_part and "]" in name_part:
-            # array declaration
+            # Array declaration
             try:
                 name, size = name_part[:name_part.index("]")].split("[")
                 if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", name.strip()):
                     print("Syntax error: Invalid array name")
                     return None
                 size = int(size.strip())
-                # value part can be comma separated or a string literal
+                # Value part can be comma separated or a string literal
                 if value_part.startswith('"') and value_part.endswith('"'):
                     values = value_part.strip('"')
                 else:
@@ -132,18 +147,18 @@ def interpret_line(line):
             except Exception as e:
                 print(f"Syntax error: Invalid array declaration - {str(e)}")
         else:
-            # scalar variable
+            # Scalar variable
             if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", name_part):
                 print("Syntax error: Invalid variable name")
                 return None
             variables[name_part] = parse_value(value_part)
         return None
 
-    # get(input) for variable or array
+    # Handle get(input) for variable or array input
     elif line.startswith("get(") and line.endswith(")"):
         arg = line[4:-1].strip()
         if "[" in arg and "]" in arg:
-            # array input
+            # Array input
             try:
                 name, size = arg[:arg.index("]")].split("[")
                 name = name.strip()
@@ -153,7 +168,7 @@ def interpret_line(line):
             except Exception as e:
                 print(f"Syntax error: Invalid array input - {str(e)}")
         else:
-            # scalar input
+            # Scalar input
             if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", arg):
                 print("Syntax error: Invalid variable name")
                 return None
@@ -161,7 +176,7 @@ def interpret_line(line):
             variables[arg] = parse_value(val)
         return None
 
-    # if (condition)
+    # Handle if (condition) for conditional statements
     elif line.startswith("if (") and line.endswith(")"):
         condition = line[4:-1].strip()
         result = evaluate_expression(condition)
@@ -170,9 +185,9 @@ def interpret_line(line):
             return None
         return result
 
-    # assignment or expression evaluation
+    # Handle assignment or expression evaluation
     elif any(op in line for op in ["+", "-", "*", "/", "|", "^", ">", "<", "!=", "<=", ">=", "=", "and", "or"]):
-        # assignment (var = expr)
+        # Assignment (var = expr)
         if "=" in line and not any(sym + "=" in line for sym in ["!", "<", ">"]):
             try:
                 var, expr = line.split("=", 1)
@@ -201,16 +216,19 @@ def interpret_line(line):
         print(f"Syntax error: Unknown statement: {line}")
         return None
 
+# --- Main Interpretation Function ---
+
+# Interprets a block of code, handling control structures like if and while
 def interpret(code):
     lines = code.strip().splitlines()
     i = 0
     while i < len(lines):
         line = lines[i].strip()
-        if not line or line.startswith("//"):
+        if not line or line.startswith("##"):
             i += 1
             continue
 
-        # if statement with then and optional else
+        # Handle if statement with then and optional else
         if line.startswith("if "):
             condition_result = interpret_line(line)
             i += 1
@@ -238,7 +256,7 @@ def interpret(code):
                 interpret(else_stmt)
             continue
 
-        # while loop
+        # Handle while loop
         if line.startswith("while "):
             condition = interpret_line(line)
             i += 1
@@ -264,6 +282,6 @@ def interpret(code):
                 interpret(body)
             continue
 
-        # normal line
+        # Handle normal line
         interpret_line(line)
         i += 1
