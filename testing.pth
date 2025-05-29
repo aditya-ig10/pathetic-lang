@@ -1,0 +1,14 @@
+// Sum of array elements with user input
+let size = n
+get (arr[n])
+let sum = 0
+
+say f"Enter {n} numbers: "
+get(arr[5])
+
+for i as (i = 0 ; i < size ; i++)
+do {
+    sum = sum + arr[i]
+}
+
+say f"Sum of array elements: {sum}\n"
