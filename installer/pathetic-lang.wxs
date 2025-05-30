@@ -21,6 +21,7 @@
                 <File Id="HelloPth" Source="dist-files/hello.pth" />
             </Component>
             <Component Id="PathUpdate" Guid="37e4230e-9f77-4fa4-8575-789c15e2eb8f">
+                <CreateFolder /> <!-- Add this to explicitly create INSTALLFOLDER -->
                 <Environment Id="PathEnv" Action="set" Name="PATH" Value="[INSTALLFOLDER]" Part="last" System="yes" />
             </Component>
         </DirectoryRef>
