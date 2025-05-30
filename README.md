@@ -41,9 +41,12 @@ Values are automatically parsed based on their format:
 ## Variables and Arrays
 ### Variable Declaration
 Use `let` to declare and initialize a variable with a value.
-- **Syntax**: `let variable_name = value`
-- **Example**: 
+- **Syntax**:
+  ```pathetic
+  let variable_name = value
   ```
+- **Example**:
+  ```pathetic
   let x = 5
   let name = "Alice"
   ```
@@ -52,14 +55,17 @@ Use `let` to declare and initialize a variable with a value.
 
 ### Array Declaration
 Use `let` with square brackets to declare an array of a fixed size.
-- **Syntax**: `let array_name[size] = value1, value2, ...`
-- **Example**:
+- **Syntax**:
+  ```pathetic
+  let array_name[size] = value1, value2, ...
   ```
+- **Example**:
+  ```pathetic
   let numbers[3] = 1, 2, 3
   let words[2] = "hello", "world"
   ```
 - Alternatively, arrays can be initialized with a single string literal:
-  ```
+  ```pathetic
   let text[5] = "hello"
   ```
 - The size must be an integer, and the number of values cannot exceed the specified size.
@@ -67,9 +73,12 @@ Use `let` with square brackets to declare an array of a fixed size.
 
 ### Variable Assignment
 Assign a new value to an existing variable using `=`.
-- **Syntax**: `variable_name = expression`
-- **Example**:
+- **Syntax**:
+  ```pathetic
+  variable_name = expression
   ```
+- **Example**:
+  ```pathetic
   let x = 10
   x = x + 5
   ```
@@ -79,17 +88,23 @@ Assign a new value to an existing variable using `=`.
 ### Input
 Use `get` to read input from the user.
 - **Scalar Input**:
-  - **Syntax**: `get(variable_name)`
+  - **Syntax**:
+    ```pathetic
+    get(variable_name)
+    ```
   - Reads a single value and assigns it to the variable, automatically parsed as an integer, float, or string.
   - **Example**:
-    ```
+    ```pathetic
     get(x)
     ```
 - **Array Input**:
-  - **Syntax**: `get(array_name[size])`
+  - **Syntax**:
+    ```pathetic
+    get(array_name[size])
+    ```
   - Reads space-separated values and assigns them to the array, up to the specified size.
   - **Example**:
-    ```
+    ```pathetic
     get(numbers[3])
     ```
     (If the input is `1 2 3`, `numbers` becomes `[1, 2, 3]`.)
@@ -97,26 +112,40 @@ Use `get` to read input from the user.
 ### Output
 Use `say` to print output without a newline.
 - **Direct String Output**:
-  - **Syntax**: `say "string"` or `say 'string'`
+  - **Syntax**:
+    ```pathetic
+    say "string"
+    ```
+    or
+    ```pathetic
+    say 'string'
+    ```
   - Prints the string with escape sequences processed.
   - **Example**:
-    ```
+    ```pathetic
     say "Hello\nWorld"
     ```
-    Output: 
+    Output:
     ```
     Hello
     World
     ```
 - **Formatted String (f-string) Output**:
-  - **Syntax**: `say f"string with {expression}"`
+  - **Syntax**:
+    ```pathetic
+    say f"string with {expression}"
+    ```
   - Evaluates expressions within curly braces and prints the resulting string.
   - **Example**:
+    ```pathetic
+    let name = "Alice"
+    let age = 25
+    say f"Hello, {name}! You are {age} years old.\n"
     ```
-    let x = 5
-    say f"The value is {x}"
+    Output:
     ```
-    Output: `The value is 5`
+    Hello, Alice! You are 25 years old.
+    ```
 
 ## Operators
 Pathetic supports the following operators for use in expressions:
@@ -154,19 +183,22 @@ Pathetic supports the following operators for use in expressions:
 ### If-Then-Else
 Conditional execution with an optional else clause.
 - **Syntax**:
-  ```
+  ```pathetic
   if (condition)
   then (statement)
   [else (statement)]
   ```
 - **Example**:
-  ```
+  ```pathetic
   let x = 10
   if (x > 5)
   then (say "x is large")
   else (say "x is small")
   ```
-  Output: `x is large`
+  Output:
+  ```
+  x is large
+  ```
 
 - The `condition` is evaluated as a boolean.
 - The `then` and `else` statements are single statements (not blocks). Use nested statements for complex logic.
@@ -175,24 +207,23 @@ Conditional execution with an optional else clause.
 ### While Loop
 Execute a block or single statement while a condition is true.
 - **Syntax for Block**:
-  ```
+  ```pathetic
   while (condition)
   do {
     statements
   }
   ```
 - **Syntax for Single Statement**:
-  ```
+  ```pathetic
   while (condition)
   do (statement)
   ```
 - **Example**:
-  ```
+  ```pathetic
   let i = 0
   while (i < 3)
   do {
-    say f"Count: {i}
-"
+    say f"Count: {i}\n"
     i = i + 1
   }
   ```
@@ -209,18 +240,17 @@ Execute a block or single statement while a condition is true.
 ### For Loop
 A for loop with initialization, condition, and update statements.
 - **Syntax**:
-  ```
+  ```pathetic
   for variable as (init; condition; update)
   do {
     statements
   }
   ```
 - **Example**:
-  ```
+  ```pathetic
   for i as (let i = 0; i < 3; i++)
   do {
-    say f"Number: {i}
-"
+    say f"Number: {i}\n"
   }
   ```
   Output:
@@ -239,7 +269,10 @@ A for loop with initialization, condition, and update statements.
 
 ## String Formatting (f-strings)
 Pathetic supports f-strings for dynamic string output.
-- **Syntax**: `say f"string with {expression}"`
+- **Syntax**:
+  ```pathetic
+  say f"string with {expression}"
+  ```
 - Expressions within `{}` are evaluated and replaced with their values.
 - **Supported Escape Sequences**:
   - `\n`: Newline
@@ -252,7 +285,7 @@ Pathetic supports f-strings for dynamic string output.
   - `\'`: Single quote
   - `\\`: Backslash
 - **Example**:
-  ```
+  ```pathetic
   let name = "Alice"
   let age = 25
   say f"Hello, {name}! You are {age} years old.\n"
@@ -265,14 +298,14 @@ Pathetic supports f-strings for dynamic string output.
 ## Comments
 - **Single-line Comments**: Start with `//` and are ignored by the interpreter.
 - **Example**:
-  ```
+  ```pathetic
   // This is a comment
   let x = 5  // Declare x
   ```
 
 ## Examples
 ### Example 1: Simple Arithmetic and Output
-```
+```pathetic
 let x = 10
 let y = 3
 say f"Sum: {x + y}\n"
@@ -285,7 +318,7 @@ Product: 30
 ```
 
 ### Example 2: Array Input and Loop
-```
+```pathetic
 get(numbers[3])
 for i as (let i = 0; i < 3; i++)
 do {
@@ -301,7 +334,7 @@ Number 2: 3
 ```
 
 ### Example 3: Conditional and While Loop
-```
+```pathetic
 let x = 5
 while (x > 0)
 do {
@@ -321,7 +354,7 @@ Small
 ```
 
 ## Limitations and Notes
-- **No Nested Blocks**: If-then-else statements only support single statements in `then` and `else` clauses. Use multiple statements within loops for complex logic.
+- **No Nested Blocks**: If-then-else statements only support single statements in `then` and `else` clauses. Use nested statements within loops for complex logic.
 - **No Array Indexing in Expressions**: Array elements can be accessed in f-strings (e.g., `{numbers[i]}`), but general array indexing in expressions is not explicitly supported.
 - **Error Handling**: Syntax errors or evaluation errors are printed to the console, and execution continues with the next statement.
 - **No Function Definitions**: The language does not support user-defined functions.
