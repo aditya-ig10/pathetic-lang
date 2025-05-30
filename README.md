@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/1aa15e7e-d76e-4b1f-a850-8cf7ea8d37cc" alt="pth" />
+</p>
+
 # Pathetic Programming Language Documentation
 
 Pathetic is a simple, pseudo-code-based programming language designed for ease of use with a focus on basic control structures, variable manipulation, and string formatting. This documentation outlines the syntax, operators, and features supported by the language, as implemented in the provided interpreter.
