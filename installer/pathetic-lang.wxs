@@ -1,29 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
-   <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-       <Product Id="*" Name="pathetic-lang" Language="1033" Version="0.1.1" Manufacturer="Aditya" UpgradeCode="d3b2e1f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f">
-           <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Product Id="*" Name="Pathetic Language" Language="1033" Version="1.0.0.0" Manufacturer="Aditya-IG-10" UpgradeCode="9e0f87b0-7e56-4a8d-a229-1e82bc4c9999">
+        <Package InstallerVersion="200" Compressed="yes" InstallScope="perMachine" />
+        <MajorUpgrade DowngradeErrorMessage="A newer version of Pathetic Language is already installed." />
+        <MediaTemplate EmbedCab="yes" />
 
-           <MajorUpgrade DowngradeErrorMessage="A newer version of pathetic-lang is already installed." />
-           <MediaTemplate EmbedCab="yes" />
+        <Directory Id="TARGETDIR" Name="SourceDir">
+            <Directory Id="ProgramFilesFolder">
+                <Directory Id="INSTALLFOLDER" Name="PatheticLang">
+                </Directory>
+            </Directory>
+        </Directory>
 
-           <Directory Id="TARGETDIR" Name="SourceDir">
-               <Directory Id="ProgramFilesFolder">
-                   <Directory Id="INSTALLFOLDER" Name="pathetic-lang" />
-               </Directory>
-           </Directory>
+        <DirectoryRef Id="INSTALLFOLDER">
+            <Component Id="PatheticFiles" Guid="3c501de3-8f84-4e63-9b1d-1c1c5b1b4d8e">
+                <File Id="CliPy" Source="dist-files/cli.py" />
+                <File Id="InterpreterPy" Source="dist-files/interpreter.py" />
+                <File Id="RunnerPy" Source="dist-files/runner.py" />
+                <File Id="ReadmeMd" Source="dist-files/README.md" />
+                <File Id="HelloPth" Source="dist-files/hello.pth" />
+            </Component>
+            <Component Id="PathUpdate" Guid="37e4230e-9f77-4fa4-8575-789c15e2eb8f">
+                <Environment Id="PathEnv" Action="set" Name="PATH" Value="[INSTALLFOLDER]" Part="last" System="yes" />
+            </Component>
+        </DirectoryRef>
 
-           <DirectoryRef Id="INSTALLFOLDER">
-               <Component Id="MainFiles" Guid="a1b2c3d4-e5f6-47h8-i9j0-k1l2m3n4o5p6">
-                   <File Id="cli_py" Source="dist-files/cli.py" KeyPath="yes" />
-                   <File Id="interpreter_py" Source="dist-files/interpreter.py" />
-                   <File Id="runner_py" Source="dist-files/runner.py" />
-                   <File Id="hello_pth" Source="dist-files/hello.pth" />
-                   <File Id="readme_md" Source="dist-files/README.md" />
-               </Component>
-           </DirectoryRef>
-
-           <Feature Id="MainFeature" Title="pathetic-lang" Level="1">
-               <ComponentRef Id="MainFiles" />
-           </Feature>
-       </Product>
-   </Wix>
+        <Feature Id="MainFeature" Title="Pathetic Language" Level="1">
+            <ComponentRef Id="PatheticFiles" />
+            <ComponentRef Id="PathUpdate" />
+        </Feature>
+    </Product>
+</Wix>
