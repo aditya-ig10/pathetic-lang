@@ -5,6 +5,9 @@
         <MajorUpgrade DowngradeErrorMessage="A newer version of Pathetic Language is already installed." />
         <MediaTemplate EmbedCab="yes" />
 
+        <!-- Use a minimal UI -->
+        <UIRef Id="WixUI_Minimal" />
+
         <Directory Id="TARGETDIR" Name="SourceDir">
             <Directory Id="ProgramFilesFolder">
                 <Directory Id="INSTALLFOLDER" Name="PatheticLang">
@@ -20,15 +23,10 @@
                 <File Id="ReadmeMd" Source="dist-files/README.md" />
                 <File Id="HelloPth" Source="dist-files/hello.pth" />
             </Component>
-            <Component Id="PathUpdate" Guid="37e4230e-9f77-4fa4-8575-789c15e2eb8f">
-                <CreateFolder /> <!-- Add this to explicitly create INSTALLFOLDER -->
-                <Environment Id="PathEnv" Action="set" Name="PATH" Value="[INSTALLFOLDER]" Part="last" System="yes" />
-            </Component>
         </DirectoryRef>
 
         <Feature Id="MainFeature" Title="Pathetic Language" Level="1">
             <ComponentRef Id="PatheticFiles" />
-            <ComponentRef Id="PathUpdate" />
         </Feature>
     </Product>
 </Wix>
