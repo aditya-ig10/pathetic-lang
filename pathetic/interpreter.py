@@ -1,4 +1,5 @@
 import re
+import sys
 
 # Global dictionaries to store variables and functions
 variables = {}
@@ -56,6 +57,12 @@ def evaluate_expression(expr, local_vars=None):
                 if isinstance(value, str):
                     escaped_value = value.replace('\\', '\\\\').replace('"', '\\"')
                     value = f'"{escaped_value}"'
+                elif isinstance(value, (list, tuple)):
+                    value = str(value)
+                elif value is None:
+                    return f"Evaluation error: Variable '{var}' is undefined"
+                else:
+                    value = str(value)
                 expr = re.sub(rf'\b{re.escape(var)}\b', str(value), expr)
         safe_dict = {
             "__builtins__": None,
@@ -66,7 +73,7 @@ def evaluate_expression(expr, local_vars=None):
         }
         return eval(expr, safe_dict, {})
     except Exception as e:
-        return f"Evaluation error: {str(e)}"
+        return f"Evaluation error: {str(e)} in expression '{expr}'"
 
 # --- String Formatting Functions ---
 
@@ -107,7 +114,36 @@ def interpret_line(line, local_vars=None):
     
     line = line.strip()
     if not line or line.startswith("//"):
-        return None, None
+        return None, None, False
+
+    # Handle get
+    if line.startswith("get(") and line.endswith(")"):
+        arg = line[4:-1].strip()
+        if "[" in arg and "]" in arg:
+            try:
+                name, size = arg[:arg.index("]")].split("[")
+                name = name.strip()
+                if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", name):
+                    print(f"Syntax error: Invalid array name '{name}' at line: {line}")
+                    return None, None, True
+                size = int(size.strip())
+                print(f"Enter {size} space-separated values for {name}: ", end='')
+                val = input().strip().split()
+                if len(val) < size:
+                    print(f"Input error: Expected {size} values, got {len(val)} at line: {line}")
+                    return None, None, True
+                local_vars[name] = [parse_value(v) for v in val[:size]]
+            except Exception as e:
+                print(f"Syntax error: Invalid array input at line: {line} - {str(e)}")
+                return None, None, True
+        else:
+            if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", arg):
+                print(f"Syntax error: Invalid variable name '{arg}' at line: {line}")
+                return None, None, True
+            print(f"Enter value for {arg}: ", end='')
+            val = input().strip()
+            local_vars[arg] = parse_value(val)
+        return None, None, False
 
     # Handle function definition
     if line.startswith("func ") and "{" in line:
@@ -117,45 +153,47 @@ def interpret_line(line, local_vars=None):
             name = name_part.strip()
             if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", name):
                 print(f"Syntax error: Invalid function name '{name}' at line: {line}")
-                return None, None
+                return None, None, True
             params = [p.strip() for p in param_part[:-1].split(",") if p.strip()]
             for param in params:
                 if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", param):
                     print(f"Syntax error: Invalid parameter name '{param}' at line: {line}")
-                    return None, None
-            return ("func", name, params), None
+                    return None, None, True
+            return ("func", name, params), None, False
         except Exception as e:
             print(f"Syntax error: Invalid function definition at line: {line} - {str(e)}")
-            return None, None
+            return None, None, True
 
     # Handle function call
     if re.match(r"[a-zA-Z_][a-zA-Z0-9_]*\([^)]*\)$", line):
         try:
             name, args_part = line.split("(", 1)
             name = name.strip()
+            if name == "get":
+                print(f"Syntax error: 'get' is a reserved keyword, not a function at line: {line}")
+                return None, None, True
             args = [arg.strip() for arg in args_part[:-1].split(",") if arg.strip()]
             if name in functions:
                 func_params, func_body = functions[name]
                 if len(args) != len(func_params):
                     print(f"Syntax error: Function '{name}' expects {len(func_params)} arguments, got {len(args)} at line: {line}")
-                    return None, None
+                    return None, None, True
                 evaluated_args = [evaluate_expression(arg, local_vars) for arg in args]
                 for arg in evaluated_args:
                     if isinstance(arg, str) and arg.startswith("Evaluation error"):
                         print(arg)
-                        return None, None
+                        return None, None, True
                 func_vars = dict(local_vars)
                 for param, arg in zip(func_params, evaluated_args):
                     func_vars[param] = arg
                 result = interpret(func_body, func_vars)
-                # print(f"DEBUG: Function '{name}' returned {result}")  # Uncomment for debugging
-                return None, result
+                return None, result, False
             else:
                 print(f"Syntax error: Undefined function '{name}' at line: {line}")
-                return None, None
+                return None, None, True
         except Exception as e:
             print(f"Syntax error: Invalid function call at line: {line} - {str(e)}")
-            return None, None
+            return None, None, True
 
     # Handle return statement
     if line.startswith("return "):
@@ -164,19 +202,19 @@ def interpret_line(line, local_vars=None):
             result = evaluate_expression(value, local_vars)
             if isinstance(result, str) and result.startswith("Evaluation error"):
                 print(result)
-                return None, None
-            return "return", result
-        return "return", None
+                return None, None, True
+            return "return", result, False
+        return "return", None, False
 
     # Handle say f"string"
     if line.startswith("say f\"") and line.endswith("\""):
         content = line[6:-1]
         result = interpret_fstring(content, local_vars)
-        if not result.startswith("Formatting error"):
-            print(result, end='')
-        else:
-            print(result, end='')
-        return None, None
+        if result.startswith("Formatting error"):
+            print(result)
+            return None, None, True
+        print(result, end='')
+        return None, None, False
 
     # Handle say "string"
     elif line.startswith("say "):
@@ -189,7 +227,8 @@ def interpret_line(line, local_vars=None):
             print(processed_content, end='')
         else:
             print(f"Syntax error: Invalid string format at line: {line}")
-        return None, None
+            return None, None, True
+        return None, None, False
 
     # Handle for loop
     elif line.startswith("for ") and " as (" in line and line.endswith(")"):
@@ -197,48 +236,40 @@ def interpret_line(line, local_vars=None):
             parts = line.split(" as (")
             if len(parts) != 2:
                 print(f"Syntax error: Invalid for loop syntax at line: {line}")
-                return None, None
+                return None, None, True
             var_name = parts[0].replace("for ", "").strip()
             if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", var_name):
                 print(f"Syntax error: Invalid loop variable name '{var_name}' at line: {line}")
-                return None, None
+                return None, None, True
             loop_parts = parts[1][:-1].split(";")
             if len(loop_parts) != 3:
-                print(f"Syntax error: For loop must have 3 components at line: {line}")
-                return None, None
+                print(f"Syntax error: For loop must have 3 components at line:{line}")
+                return None, None, True
             init_stmt = loop_parts[0].strip()
             condition = loop_parts[1].strip()
             update_stmt = loop_parts[2].strip()
             if not init_stmt or not condition or not update_stmt:
                 print(f"Syntax error: For loop components cannot be empty at line: {line}")
-                return None, None
-            return ("for", var_name, init_stmt, condition, update_stmt), None
+                return None, None, True
+            return ("for", var_name, init_stmt, condition, update_stmt), None, False
         except Exception as e:
             print(f"Syntax error: Invalid for loop at line: {line} - {str(e)}")
-            return None, None
-
-    # Handle then
-    elif line.startswith("then (") and line.endswith(")"):
-        return line[6:-1].strip(), None
-
-    # Handle else
-    elif line.startswith("else (") and line.endswith(")"):
-        return line[6:-1].strip(), None
+            return None, None, True
 
     # Handle while
     elif line.startswith("while (") and line.endswith(")"):
-        return line[7:-1].strip(), None
+        return line[7:-1].strip(), None, False
 
     # Handle do
     elif line.startswith("do (") and line.endswith(")"):
-        return line[4:-1].strip(), None
+        return line[4:-1].strip(), None, False
 
     # Handle let
     elif line.startswith("let "):
         parts = line[4:].split("=", 1)
         if len(parts) != 2:
             print(f"Syntax error: Invalid declaration at line: {line}")
-            return None, None
+            return None, None, True
         name_part, value_part = parts[0].strip(), parts[1].strip()
         if "[" in name_part and "]" in name_part:
             try:
@@ -246,87 +277,68 @@ def interpret_line(line, local_vars=None):
                 name = name.strip()
                 if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", name):
                     print(f"Syntax error: Invalid array name '{name}' at line: {line}")
-                    return None, None
+                    return None, None, True
                 size = int(size.strip())
                 if value_part.startswith('"') and value_part.endswith('"'):
                     values = process_escape_sequences(value_part.strip('"'))
                 else:
                     values = [parse_value(v.strip()) for v in value_part.split(',') if v.strip()]
                 local_vars[name] = values[:size]
-                # print(f"DEBUG: Assigned array {name} = {local_vars[name]}")  # Uncomment for debugging
             except Exception as e:
                 print(f"Syntax error: Invalid array declaration at line: {line} - {str(e)}")
+                return None, None, True
         else:
             if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", name_part):
                 print(f"Syntax error: Invalid variable name '{name_part}' at line: {line}")
-                return None, None
-            # Check if value_part is a function call
+                return None, None, True
             if re.match(r"[a-zA-Z_][a-zA-Z0-9_]*\([^)]*\)$", value_part):
                 try:
                     name, args_part = value_part.split("(", 1)
                     name = name.strip()
+                    if name == "get":
+                        print(f"Syntax error: 'get' is a reserved keyword, not a function at line: {line}")
+                        return None, None, True
                     args = [arg.strip() for arg in args_part[:-1].split(",") if arg.strip()]
                     if name in functions:
                         func_params, func_body = functions[name]
                         if len(args) != len(func_params):
                             print(f"Syntax error: Function '{name}' expects {len(func_params)} arguments, got {len(args)} at line: {line}")
-                            return None, None
+                            return None, None, True
                         evaluated_args = [evaluate_expression(arg, local_vars) for arg in args]
                         for arg in evaluated_args:
                             if isinstance(arg, str) and arg.startswith("Evaluation error"):
                                 print(arg)
-                                return None, None
+                                return None, None, True
                         func_vars = dict(local_vars)
                         for param, arg in zip(func_params, evaluated_args):
                             func_vars[param] = arg
                         result = interpret(func_body, func_vars)
+                        if result is None and name not in ["countdown"]:
+                            print(f"Syntax error: Function '{name}' returned None at line: {line}")
+                            return None, None, True
                         local_vars[name_part] = result
-                        # print(f"DEBUG: Assigned {name_part} = {result} from function call")  # Uncomment for debugging
                     else:
                         print(f"Syntax error: Undefined function '{name}' in assignment at line: {line}")
-                        return None, None
+                        return None, None, True
                 except Exception as e:
                     print(f"Syntax error: Invalid function call in assignment at line: {line} - {str(e)}")
+                    return None, None, True
             else:
                 result = evaluate_expression(value_part, local_vars)
                 if isinstance(result, str) and result.startswith("Evaluation error"):
                     print(result)
-                    return None, None
+                    return None, None, True
                 local_vars[name_part] = result
-                # print(f"DEBUG: Assigned {name_part} = {result}")  # Uncomment for debugging
-        return None, None
-
-    # Handle get
-    elif line.startswith("get(") and line.endswith(")"):
-        arg = line[4:-1].strip()
-        if "[" in arg and "]" in arg:
-            try:
-                name, size = arg[:arg.index("]")].split("[")
-                name = name.strip()
-                if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", name):
-                    print(f"Syntax error: Invalid array name '{name}' at line: {line}")
-                    return None, None
-                size = int(size.strip())
-                val = input().split()
-                local_vars[name] = [parse_value(v) for v in val[:size]]
-            except Exception as e:
-                print(f"Syntax error: Invalid array input at line: {line} - {str(e)}")
-        else:
-            if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", arg):
-                print(f"Syntax error: Invalid variable name '{arg}' at line: {line}")
-                return None, None
-            val = input()
-            local_vars[arg] = parse_value(val)
-        return None, None
+        return None, None, False
 
     # Handle if
     elif line.startswith("if (") and line.endswith(")"):
         condition = line[4:-1].strip()
         result = evaluate_expression(condition, local_vars)
         if isinstance(result, str) and result.startswith("Evaluation error"):
-            print(result)
-            return None, None
-        return result, None
+            print(f"Syntax error: Invalid condition in if statement at line: {line} - {result}")
+            return None, None, True
+        return result, None, False
 
     # Handle assignment or expression
     elif any(op in line for op in ["+", "-", "*", "/", "|", "^", ">", "<", "!=", "<=", ">=", "=", "and", "or"]):
@@ -337,29 +349,31 @@ def interpret_line(line, local_vars=None):
                 expr = expr.strip()
                 if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", var):
                     print(f"Syntax error: Invalid variable name '{var}' at line: {line}")
-                    return None, None
+                    return None, None, True
                 result = evaluate_expression(expr, local_vars)
                 if isinstance(result, str) and result.startswith("Evaluation error"):
                     print(result)
-                    return None, None
+                    return None, None, True
                 local_vars[var] = result
             except Exception as e:
                 print(f"Syntax error: Invalid assignment at line: {line} - {str(e)}")
+                return None, None, True
         else:
             result = evaluate_expression(line, local_vars)
             if isinstance(result, str) and result.startswith("Evaluation error"):
                 print(result)
+                return None, None, True
             else:
                 print(result)
-        return None, None
+        return None, None, False
 
     # Handle standalone closing brace
     elif line == "}":
-        return "end_block", None
+        return "end_block", None, False
 
     else:
         print(f"Syntax error: Unknown statement at line: {line}")
-        return None, None
+        return None, None, True
 
 # --- Block Parsing Functions ---
 
@@ -370,12 +384,10 @@ def find_matching_brace(lines, start_index):
         line = lines[i].strip()
         if not line or line.startswith("//"):
             continue
-        if "{" in line:
-            brace_count += line.count("{")
-        if "}" in line:
-            brace_count -= line.count("}")
-            if brace_count <= 0:
-                return i
+        brace_count += line.count("{")
+        brace_count -= line.count("}")
+        if brace_count <= 0:
+            return i
     return -1
 
 def extract_block(lines, start_index, end_index):
@@ -395,7 +407,6 @@ def interpret(code, local_vars=None):
     
     lines = code.strip().splitlines()
     i = 0
-    return_value = None
     while i < len(lines):
         line = lines[i].strip()
         if not line or line.startswith("//"):
@@ -404,17 +415,17 @@ def interpret(code, local_vars=None):
 
         # Handle function definition
         if line.startswith("func "):
-            func_info, _ = interpret_line(line, local_vars)
+            func_info, _, error = interpret_line(line, local_vars)
+            if error:
+                return None
             if func_info is None or func_info[0] != "func":
                 print(f"Syntax error: Invalid function definition at line {i + 1}: {line}")
-                i += 1
-                continue
+                return None
             _, func_name, params = func_info
             closing_brace_index = find_matching_brace(lines, i)
             if closing_brace_index == -1:
                 print(f"Syntax error: No matching '}}' found for function body at line {i + 1}: {line}")
-                i += 1
-                continue
+                return None
             body = extract_block(lines, i + 1, closing_brace_index)
             functions[func_name] = (params, body)
             i = closing_brace_index + 1
@@ -422,27 +433,34 @@ def interpret(code, local_vars=None):
 
         # Handle for loop
         if line.startswith("for "):
-            loop_info, _ = interpret_line(line, local_vars)
+            loop_info, _, error = interpret_line(line, local_vars)
+            if error:
+                return None
+            if loop_info is None or loop_info[0] != "for":
+                print(f"Syntax error: Invalid for loop at line {i + 1}: {line}")
+                return None
+            _, var_name, init_stmt, condition, update_stmt = loop_info
             i += 1
             if i >= len(lines):
-                continue
-            if loop_info is None or loop_info[0] != "for":
-                print(f"Syntax error: Invalid for loop at line {i}: {line}")
-                continue
-            _, var_name, init_stmt, condition, update_stmt = loop_info
-            do_line = lines[i].strip() if i < len(lines) else ""
+                print(f"Syntax error: Unexpected end of code after 'for' at line {i}")
+                return None
+            do_line = lines[i].strip()
             if not do_line.startswith("do {"):
                 print(f"Syntax error: Expected 'do {{' after 'for' at line {i + 1}: {do_line}")
-                i += 1
-                continue
+                return None
             closing_brace_index = find_matching_brace(lines, i)
             if closing_brace_index == -1:
                 print(f"Syntax error: No matching '}}' found for 'do {{' at line {i + 1}: {do_line}")
-                i += 1
-                continue
+                return None
             body = extract_block(lines, i + 1, closing_brace_index)
             i = closing_brace_index + 1
-            interpret_line(init_stmt, local_vars)
+
+            # Execute the initialization statement
+            _, _, error = interpret_line(init_stmt, local_vars)
+            if error:
+                return None
+
+            # Handle the update statement (e.g., i++ or i--)
             if "++" in update_stmt:
                 var = update_stmt.replace("++", "").strip()
                 update_code = f"{var} = {var} + 1"
@@ -451,97 +469,105 @@ def interpret(code, local_vars=None):
                 update_code = f"{var} = {var} - 1"
             else:
                 update_code = update_stmt
+
+            # Execute the loop
             while True:
                 for_result = evaluate_expression(condition, local_vars)
                 if isinstance(for_result, str) and for_result.startswith("Evaluation error"):
                     print(for_result)
-                    break
+                    return None
                 if not for_result:
                     break
                 loop_return = interpret(body, local_vars)
                 if loop_return is not None:
-                    return_value = loop_return
-                    break
-                interpret_line(update_code, local_vars)
-            if return_value is not None:
-                break
+                    return loop_return
+                _, _, error = interpret_line(update_code, local_vars)
+                if error:
+                    return None
             continue
 
         # Handle while loop
         if line.startswith("while "):
-            condition, _ = interpret_line(line, local_vars)
+            condition, _, error = interpret_line(line, local_vars)
+            if error:
+                return None
             i += 1
             if i >= len(lines):
-                continue
+                print(f"Syntax error: Unexpected end of code after 'while' at line {i}")
+                return None
             do_line = lines[i].strip()
             if do_line.startswith("do {"):
+                # Block-style while loop
                 closing_brace_index = find_matching_brace(lines, i)
                 if closing_brace_index == -1:
                     print(f"Syntax error: No matching '}}' found for 'do {{' at line {i + 1}: {do_line}")
-                    i += 1
-                    continue
+                    return None
                 body = extract_block(lines, i + 1, closing_brace_index)
                 i = closing_brace_index + 1
             elif do_line.startswith("do ("):
+                # Single statement while loop
                 body = interpret_line(do_line, local_vars)[0]
                 i += 1
             else:
                 print(f"Syntax error: Expected 'do' after 'while' at line {i + 1}: {do_line}")
-                i += 1
-                continue
+                return None
             while True:
                 while_result = evaluate_expression(condition, local_vars)
                 if isinstance(while_result, str) and while_result.startswith("Evaluation error"):
                     print(while_result)
-                    break
+                    return None
                 if not while_result:
                     break
                 loop_return = interpret(body, local_vars)
                 if loop_return is not None:
-                    return_value = loop_return
-                    break
-            if return_value is not None:
-                break
+                    return loop_return
             continue
 
         # Handle if statement
         if line.startswith("if "):
-            condition_result, _ = interpret_line(line, local_vars)
+            condition_result, _, error = interpret_line(line, local_vars)
+            if error:
+                return None
             i += 1
             if i >= len(lines):
-                continue
-            then_line = lines[i].strip()
-            if not then_line.startswith("then ("):
-                print(f"Syntax error: Expected 'then' after 'if' at line {i + 1}: {then_line}")
-                i += 1
-                continue
-            then_stmt = interpret_line(then_line, local_vars)[0]
-            i += 1
-            else_stmt = None
-            if i < len(lines) and lines[i].strip().startswith("else ("):
-                else_stmt = interpret_line(lines[i].strip(), local_vars)[0]
-                i += 1
+                print(f"Syntax error: Expected '{{' block after 'if' at line {i}")
+                return None
+            if_line = lines[i].strip()
+            if not if_line.startswith("{"):
+                print(f"Syntax error: Expected '{{' after 'if' at line {i + 1}: {if_line}")
+                return None
+            closing_brace_index = find_matching_brace(lines, i)
+            if closing_brace_index == -1:
+                print(f"Syntax error: No matching '}}' found for '{{' at line {i + 1}: {if_line}")
+                return None
+            if_body = extract_block(lines, i + 1, closing_brace_index)
+            i = closing_brace_index + 1
+            else_body = None
+            if i < len(lines) and lines[i].strip().startswith("else {"):
+                else_line = lines[i].strip()
+                closing_brace_index = find_matching_brace(lines, i)
+                if closing_brace_index == -1:
+                    print(f"Syntax error: No matching '}}' found for 'else {{' at line {i + 1}: {else_line}")
+                    return None
+                else_body = extract_block(lines, i + 1, closing_brace_index)
+                i = closing_brace_index + 1
             if condition_result:
-                if then_stmt:
-                    then_return = interpret(then_stmt, local_vars)
-                    if then_return is not None:
-                        return_value = then_return
-            elif else_stmt:
-                else_return = interpret(else_stmt, local_vars)
+                if if_body:
+                    if_return = interpret(if_body, local_vars)
+                    if if_return is not None:
+                        return if_return
+            elif else_body:
+                else_return = interpret(else_body, local_vars)
                 if else_return is not None:
-                    return_value = else_return
-            if return_value is not None:
-                break
+                    return else_return
             continue
 
         # Handle normal line
-        result, return_val = interpret_line(line, local_vars)
+        result, return_val, error = interpret_line(line, local_vars)
+        if error:
+            return None
         if result == "return":
             return return_val
-        elif result == "end_block":
-            print(f"Syntax error: Unexpected '}}' at line {i + 1}: {line}")
-            i += 1
-            continue
         i += 1
 
-    return return_value
+    return None

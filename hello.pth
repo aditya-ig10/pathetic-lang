@@ -1,11 +1,77 @@
-// Example usage
-    func greet(name) {
-        say f"Hello, {name}!"
+// Pathetic language program demonstrating all interpreter features
+// File: hello.pth
+
+// --- Variable Declaration and Basic Output ---
+// Declares a scalar variable and prints it using say
+let greeting = "Hello, Pathetic!"
+say f"{greeting}\n"
+
+// --- Array Declaration and Input ---
+// Declares an array of size 3 and takes user input
+let numbers[3] = 0, 0, 0
+get(numbers[3])
+say f"Input array: {numbers}\n"
+
+// --- Arithmetic Expression ---
+// Computes the sum of the array elements using an expression
+let sum = numbers[0] + numbers[1] + numbers[2]
+say f"Sum of array: {sum}\n"
+
+// --- Function: Calculate Square ---
+// Defines a function that returns the square of a number
+func square(num) {
+    return num * num
+}
+
+// --- Function Call: Use Square ---
+// Calls the square function and stores result
+let x = 5
+let squared = square(x)
+say f"Square of {x} is {squared}\n"
+
+// --- For Loop: Sum of Squares ---
+// Uses a for loop to compute sum of squares from 1 to n
+func sumOfSquares(n) {
+    let total = 0
+    for i as (i = 1; i <= n; i++)
+    do {
+        let sq = square(i)
+        total = total + sq
     }
-    greet("Aditya")
-    
-    func add(a, b) {
-        return a + b
+    return total
+}
+
+// --- Call sumOfSquares ---
+let n = 4
+let result = sumOfSquares(n)
+say f"Sum of squares from 1 to {n} is {result}\n"
+
+// --- While Loop: Countdown ---
+// Defines a function that counts down from a number using a while loop
+func countdown(start) {
+    let count = start
+    while (count > 0)
+    do {
+        say f"Countdown: {count}\n"
+        count = count - 1
     }
-    let x = add(3, 4)
-    say f"\nSum is {x}"
+}
+
+// --- Call countdown ---
+countdown(3)
+
+// --- Function: Factorial ---
+// Defines a recursive function to compute factorial
+func factorial(n) {
+    let result = 1
+    for i as (i = 1; i <= n; i++)
+    do {
+        result = result * i
+    }
+    return result
+}
+
+// --- Call factorial ---
+let n = 5
+let result = factorial(n)
+say f"Factorial of {n} is {result}\n"
