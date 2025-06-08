@@ -1,14 +1,11 @@
-// Right Half Pattern Printing in Pathetic
-let rows = 5
-for i as (i = 0 ; i < rows ; i++)
-do {
-    for j as (j = 0 ; j < (rows - i) ; j++)
-    do {
-        for k as (k = 0; k < 2 - 1  ; k++) 
-        do {
-            say f"{j + 1}"
-        }
+// Example usage
+    func greet(name) {
+        say f"Hello, {name}!"
     }
-    say "\n"
-}
-
+    greet("Aditya")
+    
+    func add(a, b) {
+        return a + b
+    }
+    let x = add(3, 4)
+    say f"\nSum is {x}"
