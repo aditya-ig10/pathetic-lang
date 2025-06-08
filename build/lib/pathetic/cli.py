@@ -14,6 +14,7 @@ Options:
 
 Syntax Guide:
   say "hello"         → Output: hello
+  More can be found in the documentation at github.com/aditya-ig10/pathetic-lang
 """
 
 def main():
